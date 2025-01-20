@@ -6,22 +6,25 @@ const path = require('path');
 fs.mkdir(path.join(__dirname, 'project-dist'), { recursive: true }, (err) => {
   if (err) console.log(err);
 });
-
-//read the content of template
-
-let input = fs.createReadStream(path.join(__dirname, 'template.html'), 'utf-8');
-/*const output = fs.createWriteStream(
-  path.join(__dirname, 'project-dist', 'index.html'),
-);*/
-
 let template = '';
-input.on('data', (chunk) => (template += chunk));
-input.on('end', () => {
-  let re = /(?<=\{{).*?(?=\}})/gi;
-  //find tags in the template
-  let componentsForInsert = template.match(re);
-  //read content of components files and replace template tag with content, write in the file
-  componentsForInsert.forEach((component) => {
+//read the content of template
+function readTemplate() {
+  let input = fs.createReadStream(
+    path.join(__dirname, 'template.html'),
+    'utf-8',
+  );
+
+  input.on('data', (chunk) => (template += chunk));
+  input.on('end', () => {
+    let re = /(?<=\{{).*?(?=\}})/gi;
+    //find tags in the template
+    let componentsForInsert = template.match(re);
+    //read content of components files and replace template tag with content, write in the file
+    transform(componentsForInsert);
+  });
+}
+function transform(components) {
+  components.forEach((component, i) => {
     let componentFileInput = fs.createReadStream(
       path.join(__dirname, 'components', `${component}.html`),
       'utf-8',
@@ -30,17 +33,17 @@ input.on('end', () => {
     componentFileInput.on('data', (chank) => (componentFileData += chank));
     componentFileInput.on('end', () => {
       template = template.replace(`{{${component}}}`, componentFileData);
-      fs.writeFile(
+    });
+    componentFileInput.on('close', () => {
+      let finalFile = fs.createWriteStream(
         path.join(__dirname, 'project-dist', 'index.html'),
-        template,
-        (err) => {
-          if (err) console.log(err);
-        },
+        'utf-8',
       );
+      finalFile.write(template);
     });
   });
-});
-
+}
+readTemplate();
 //create css
 const outputStyle = fs.createWriteStream(
   path.join(__dirname, 'project-dist', 'style.css'),
@@ -88,7 +91,7 @@ function copyFolderContent(from, to) {
           },
         );
       });
-      console.log(filesOrigin);
+
       fs.readdir(path.join(__dirname, ...to), (err, files) => {
         if (err) console.log(err);
         else {
@@ -98,7 +101,6 @@ function copyFolderContent(from, to) {
           });
           filesCopied.forEach((el) => {
             if (filesOrigin.indexOf(el) === -1) {
-              console.log(el);
               fs.rm(path.join(__dirname, ...to, el), (err) => {
                 if (err) console.log(err);
               });
