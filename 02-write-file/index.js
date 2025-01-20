@@ -13,7 +13,7 @@ stdin.on('data', (data) => {
   } else process.exit();
 });
 process.on('exit', () =>
-  stdout.write(`Entering is finished, input is saved into text.txt!`),
+  stdout.write('Entering is finished, input is saved into text.txt!'),
 );
 process.on('SIGINT', () => {
   process.exit();
